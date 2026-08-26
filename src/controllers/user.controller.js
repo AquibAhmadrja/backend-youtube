@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js"
 import { User} from "../models/user.model.js"
-import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import {uploadOnCloudinary,deleteFromCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
@@ -277,7 +277,7 @@ const updateAccountDetails = asyncHandler(async(req, res) => {
                 email: email
             }
         },
-        {new: true}
+        {returnDocument: "after"}
         
     ).select("-password")
 
@@ -293,23 +293,32 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Avatar file is missing")
     }
 
-    //TODO: delete old image - assignment
+    // Get OLD avatar
+    const useravatartodelete = await User.findById(req.user?._id);
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    if (!useravatartodelete) {
+        throw new ApiError(404, "User not found");
+    }
 
-    if (!avatar.url) {
+    const oldAvatarUrl = useravatartodelete.avatar;
+
+    const newavatar = await uploadOnCloudinary(avatarLocalPath)
+
+    if (!newavatar.url) {
         throw new ApiError(400, "Error while uploading on avatar")
         
     }
+
+    await deleteFromCloudinary(oldAvatarUrl);
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set:{
-                avatar: avatar.url
+                avatar: newavatar.url
             }
         },
-        {new: true}
+        {returnDocument: "after"}
     ).select("-password")
 
     return res
@@ -326,24 +335,31 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Cover image file is missing")
     }
 
-    //TODO: delete old image - assignment
+    const userCovertodelete = await User.findById(req.user?._id);
+
+    if (!userCovertodelete) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const oldCoverUrl = userCovertodelete.coverImage;
 
 
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    const newcoverImage = await uploadOnCloudinary(coverImageLocalPath)
 
-    if (!coverImage.url) {
+    if (!newcoverImage?.url) {
         throw new ApiError(400, "Error while uploading on avatar")
         
     }
+    await deleteFromCloudinary(oldCoverUrl);
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set:{
-                coverImage: coverImage.url
+                coverImage: newcoverImage.url
             }
         },
-        {new: true}
+        {returnDocument: "after"}
     ).select("-password")
 
     return res
