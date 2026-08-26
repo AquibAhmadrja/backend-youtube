@@ -446,7 +446,7 @@ const getWatchHistory = asyncHandler(async(req, res) => {
     const user = await User.aggregate([
         {
             $match: {
-                _id: new mongoose.Types.ObjectId(req.user._id)
+                _id: new mongoose.Types.ObjectId(req.user._id)//because _id is of type ObjectId, so we need to convert it to ObjectId type because the req.user._id is of type string, so we need to convert it to ObjectId type
             }
         },
         {
@@ -481,7 +481,7 @@ const getWatchHistory = asyncHandler(async(req, res) => {
                         }
                     }
                 ]
-            }
+            }//we are doing this because we want to get the owner details of the video, so we are doing a lookup on the users collection and getting the owner details of the video, and then we are adding a new field called owner in the video object which will contain the owner details of the video
         }
     ])
 
